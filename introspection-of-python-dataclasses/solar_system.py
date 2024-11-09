@@ -74,7 +74,9 @@ def get_type_description(type_: Type) -> str:
     Returns:
         str: The name of the type.
     """
-    if isinstance(type_, str):
+    if type_ is None:
+        return "None"
+    elif isinstance(type_, str):
         return "str"
     elif is_dataclass(type_):
         return f"{type_.__name__} dataclass"
@@ -92,7 +94,7 @@ def get_field_default(field: Field) -> Any:
     Retrieves the default value of a field.
 
     Args:
-        field (Any): The field to retrieve the default value of.
+        field (Field): The field to retrieve the default value of.
 
     Returns:
         Any: The default value of the field.
