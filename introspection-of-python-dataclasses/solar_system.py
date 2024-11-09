@@ -89,7 +89,7 @@ def get_type_description(type_: Type) -> str:
     else:
         return type_.__name__
 
-def get_field_default(field: Field) -> Any:
+def get_field_default(field: Field) -> str:
     """
     Retrieves the default value of a field.
 
@@ -100,11 +100,11 @@ def get_field_default(field: Field) -> Any:
         Any: The default value of the field.
     """
     if field.default_factory != MISSING:
-        return f"empty {get_type_description(field.default_factory)}"
+        return f"Defaults to empty {get_type_description(field.default_factory)}"
     elif field.default == MISSING:
         return "Required"
     else:
-        return field.default
+        return f"Defaults to {field.default}"
     
 if __name__ == "__main__":
 
@@ -114,8 +114,6 @@ if __name__ == "__main__":
         for field in fields(dataclass):
             type_name = get_type_description(field.type)
             default_value = get_field_default(field)
-            if default_value != "Required":
-                default_value = f"Defaults to {default_value}"
             print(f"  {field.name} ({type_name}) : {default_value}")
         print()
 
