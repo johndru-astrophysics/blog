@@ -112,10 +112,9 @@ if __name__ == "__main__":
         for field in fields(dataclass):
             type_name = get_type_description(field.type)
             default_value = get_field_default(field)
-            if default_value == "Required":
-                print(f"  {field.name} ({type_name}) : Required")
-            else:
-                print(f"  {field.name} ({type_name}) : Defaults to {default_value}")
+            if default_value != "Required":
+                default_value = f"Defaults to {default_value}"
+            print(f"  {field.name} ({type_name}) : {default_value}")
         print()
 
 
