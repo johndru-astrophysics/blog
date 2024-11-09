@@ -1,5 +1,5 @@
 from dataclasses import MISSING, Field, dataclass, field, fields, is_dataclass
-from typing import Any, Dict, List, Type, get_origin
+from typing import Any, Dict, List, Type, get_args, get_origin
 from types import ModuleType
 import inspect
 import solar_system
@@ -79,11 +79,10 @@ def get_type_description(type_: Type) -> str:
     elif is_dataclass(type_):
         return f"{type_.__name__} dataclass"
     elif get_origin(type_) is list:
-        sub_type = type_.__args__[0]
+        sub_type = get_args(type_)[0]
         return f"List of {get_type_description(sub_type)}"
     elif get_origin(type_) is dict:
-        key_type = type_.__args__[0]
-        value_type = type_.__args__[1]
+        key_type, value_type = get_args(type_)
         return f"Dict of {get_type_description(key_type)} -> {get_type_description(value_type)}"
     else:
         return type_.__name__
