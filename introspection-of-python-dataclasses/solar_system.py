@@ -1,5 +1,8 @@
-from dataclasses import dataclass, field
-from typing import List
+from dataclasses import MISSING, Field, dataclass, field, fields, is_dataclass
+from typing import Any, Dict, List, Type, get_origin
+from types import ModuleType
+import inspect
+import solar_system
 
 @dataclass
 class Planet:
@@ -36,7 +39,8 @@ class SolarSystem:
     """
     name: str
     planets: List[Planet] = field(default_factory=list)
-
+    tst: Dict[str, Planet] = field(default_factory=dict)
+    
     def add_planet(self, planet: Planet):
         """
         Adds a planet to the solar system and updates the planet's solar_system field.
@@ -47,17 +51,72 @@ class SolarSystem:
         planet.solar_system = self
         self.planets.append(planet)
 
+# How to list all dataclasses in a module
+def get_dataclasses(module: ModuleType) -> List[Type]:
+    """
+    Retrieves all dataclass types defined in the given module.
 
+    Args:
+        module (ModuleType): The module to inspect for dataclasses.
+
+    Returns:
+        List[Type]: A list of dataclass types found in the module.
+    """
+    return [cls for name, cls in inspect.getmembers(module) if is_dataclass(cls)]
+
+def get_type_description(type_: Type) -> str:
+    """
+    Retrieves the description of a type.
+
+    Args:
+        type_ (Type): The type to retrieve the description of.
+
+    Returns:
+        str: The name of the type.
+    """
+    if isinstance(type_, str):
+        return "str"
+    elif is_dataclass(type_):
+        return f"{type_.__name__} dataclass"
+    elif get_origin(type_) is list:
+        sub_type = type_.__args__[0]
+        return f"List of {get_type_description(sub_type)}"
+    elif get_origin(type_) is dict:
+        key_type = type_.__args__[0]
+        value_type = type_.__args__[1]
+        return f"Dict of {get_type_description(key_type)} -> {get_type_description(value_type)}"
+    else:
+        return type_.__name__
+
+def get_field_default(field: Field) -> Any:
+    """
+    Retrieves the default value of a field.
+
+    Args:
+        field (Any): The field to retrieve the default value of.
+
+    Returns:
+        Any: The default value of the field.
+    """
+    if field.default_factory != MISSING:
+        return f"empty {get_type_description(field.default_factory)}"
+    elif field.default == MISSING:
+        return "Required"
+    else:
+        return field.default
+    
 if __name__ == "__main__":
-    # Create a solar system with planets
-    solar_system = SolarSystem(name='Solar System')
 
-    # Create planets
-    saturn = Planet(name='Saturn', mass=568.34e24)
-    pluto = Planet(name='Pluto', mass=1.303e22, is_dwarf_planet=True)
+    for dataclass in get_dataclasses(solar_system):
+        print(dataclass.__name__)
+    
+        for field in fields(dataclass):
+            type_name = get_type_description(field.type)
+            default_value = get_field_default(field)
+            if default_value == "Required":
+                print(f"  {field.name} ({type_name}) : Required")
+            else:
+                print(f"  {field.name} ({type_name}) : Defaults to {default_value}")
+        print()
 
-    # Add planets to the solar system
-    solar_system.add_planet(saturn)
-    solar_system.add_planet(pluto)
 
-    print(solar_system)

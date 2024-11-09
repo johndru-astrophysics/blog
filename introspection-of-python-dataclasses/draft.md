@@ -3,7 +3,10 @@ This article contains:
 
 * A brief introduction to Python dataclasses and introspection
 * An example of a dataclass model to store data
-    
+* Details on how to programatically inspect our example model
+
+Prerequisists:
+* Basic python knowledge including defining classes
 
 # Introduction
 
@@ -119,7 +122,7 @@ class SolarSystem:
         self.planets.append(planet)
 ```
 
-A `SolarSystem` contains:
+A `SolarSystem` class contains:
 * The name of the solar system, which is a required field.
 * A list of planets.
 
@@ -131,28 +134,85 @@ The `add_planet` method is used to add a planet to this solar system, we will se
 
 # Introspection methods
 
-* Finding dataclasses in a module
-    
-    * Name of class
-        
-    * Inheritance vs encapsulation
-        
-    * Docstrings
-        
-* Listing fields of a dataclass
-    
-* Determining the properties of a field, such as:
-    
-    * Type
-        
-    * Lists
-        
-    * Dicts
-        
-    * References
-        
-    * Optional
-        
+Now we are going to write some Python code to inspect the dataclasses in our model.
+
+
+## Step 1: Finding dataclasses in a module
+
+There are 2 functions we can use to find all members (classes, functions etc) of a module, then determine if the member is a dataclass:
+
+1. `inspect.getmembers` - returns all members if the specified module
+2. `is_dataclass` - returns True if the specified member is a dataclass
+
+We can write the following function to return all dataclasses in a specific module:
+
+```python
+# How to list all dataclasses in a module
+def get_dataclasses(module: ModuleType) -> List[Type]:
+    """
+    Retrieves all dataclass types defined in the given module.
+
+    Args:
+        module (ModuleType): The module to inspect for dataclasses.
+
+    Returns:
+        List[Type]: A list of dataclass types found in the module.
+    """
+    return [cls for name, cls in inspect.getmembers(module) if is_dataclass(cls)]
+```
+
+Example usage:
+
+```python
+dataclasses_in_module: List[Type] = get_dataclasses(solar_system)
+for dataclass in dataclasses_in_module:
+    print(dataclass.__name__)
+```
+
+## Step 2: Finding fields of a dataclass
+
+We will use the `fields` function to find all fields of a specific dataclass:
+
+```python
+for dataclass in get_dataclasses(solar_system):
+    print(dataclass.__name__)
+
+    for field in fields(dataclass):
+        print(f"  {field.name}: {field.type}")
+```
+
+`field.name` returns the name of the field and `field.type` return an object representing the type of the field.
+
+The code above should output the following:
+
+```shell
+Planet
+  name: <class 'str'>
+  mass: <class 'float'>
+  solar_system: SolarSystem
+  is_dwarf_planet: <class 'bool'>
+  semi_major_axis: <class 'float'>
+  eccentricity: <class 'float'>
+  inclination: <class 'float'>
+  orbital_period: <class 'float'>
+SolarSystem
+  name: <class 'str'>
+  planets: typing.List[solar_system.Planet]
+```
+
+## Step 3: Determining the properties of the field
+
+Each field type can included various properties such as:
+
+* Is the field a list or dict?
+* Does the field reference another dataclass?
+* Is the field optional?
+* Does the field have a default value?
+
+So, how to we post-process the fields type? Let's start with figuring out basic (primtive) types, such as str, int, float etc.
+
+
+
 
 # Generating a dataclass diagram
 
