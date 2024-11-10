@@ -8,6 +8,10 @@ This article contains:
 Prerequisists:
 * Basic python knowledge including defining classes
 
+You can find the source code used in this article on GutHub:
+
+https://github.com/johndru-astrophysics/blog/blob/main/introspection-of-python-dataclasses/solar_system.py
+
 # Introduction
 
 ## What are dataclasses?
@@ -209,11 +213,119 @@ Each field type can included various properties such as:
 * Is the field optional?
 * Does the field have a default value?
 
-So, how to we post-process the fields type? Let's start with figuring out basic (primtive) types, such as str, int, float etc.
+So, how to we post-process the fields type?
+
+Each field has a type, accessed with `field.type`. We can inspect that type to determine what to do. We are going to create a function that given a type, returns a description of that type we can use later:
+
+```python
+def get_type_description(field_type: Type) -> str:
+    ...
+```
+
+1. Is type None? Then return "None".
+1. Is type a reference to a dataclase? Return `"<dataclass-name> dataclass"`
+1. Is type a list? Recursively call `get_type_description` to return the list types then return `"list of <sub-type-description>"`.
+1. Is type a dict? Recursively call `get_type_description` and the key type and the value type to return the dict types then return `"dict of <key-type-description> -> <value-type-decription>"`.
+1. For everything else, just return `field_type.__name__`. For example, int would return "int" and float would return "float" etc.
+
+Here is the code to perform each of those checks:
+
+```python
+def get_type_description(field_type: Type) -> str:
+    """
+    Retrieves the description of a type.
+
+    Args:
+        field_type (Type): The type to retrieve the description of.
+
+    Returns:
+        str: The name of the type.
+    """
+    if field_type is None:
+        return "None"
+    elif is_dataclass(field_type):
+        return f"{field_type.__name__} dataclass"
+    elif get_origin(field_type) is list:
+        sub_type = get_args(field_type)[0]
+        return f"List of {get_type_description(sub_type)}"
+    elif get_origin(field_type) is dict:
+        key_type, value_type = get_args(field_type)
+        return f"Dict of {get_type_description(key_type)} -> {get_type_description(value_type)}"
+    else:
+        return field_type.__name__
+```
+
+For example:
+
+```python
+get_type_description(str)                # returns "str"
+get_type_description(Planet)             # returns "Planet dataclass"
+get_type_description(List[Planet])       # returns "List of Planet dataclass"
+get_type_description(Dict[str, Planet])  # returns "Dict of str -> Planet dataclass"
+get_type_description(List[List[Planet]]) # returns "List of List of Planet dataclass"
+```
+
+## Step 4: Determining the default value of a field, and if it is required
+
+Each field can have a default value, it is has no default value, then the field is required.
+
+We are going to create a function to return the default value, like this:
+
+```python
+def get_field_default(field: Field) -> str:
+  ...
+```
+
+We can determine the default value of a field using the following steps:
+
+1. Does the field have `field.default_factory`? If so, the field will default to empty.
+2. Does the field have `field.default`? If so, the field default value is `field.default`
+3. Otherwise the field does not have a default value, so it is required.
+
+Here is to code to return a field's default value:
+
+```python
+def get_field_default(field: Field) -> str:
+    """
+    Retrieves the default value of a field.
+
+    Args:
+        field (Field): The field to retrieve the default value of.
+
+    Returns:
+        Any: The default value of the field.
+    """
+    if field.default_factory != MISSING:
+        return f"Defaults to empty {get_type_description(field.default_factory)}"
+    elif field.default != MISSING:
+        return f"Defaults to {field.default}"
+    else:
+        return "Required"
+```
 
 
+# Summary
 
+We created a simple model using Python dataclasses, to model a solar system and it's planets.
 
-# Generating a dataclass diagram
+Then we created 3 functions to:
 
-Show how to generate a dataclass diagram using dot syntax. Or maybe latex or something.
+1. Find all dataclasses in a Python module
+1. Return a dataclass field type as a string
+1. Return a dataclass field default value
+
+## Putting it all together
+
+We can no use all the code we created to create print a summary of a modules dataclasses and their fields:
+
+```python
+for dataclass in get_dataclasses(solar_system):
+    print(dataclass.__name__)
+
+    for field in fields(dataclass):
+        type_name = get_type_description(field.type)
+        default_value = get_field_default(field)
+        print(f"  {field.name} ({type_name}) : {default_value}")
+    print()
+```
+

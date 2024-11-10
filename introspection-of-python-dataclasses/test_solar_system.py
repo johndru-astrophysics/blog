@@ -18,7 +18,6 @@ class TestSolarSystem(unittest.TestCase):
         solar_system = SolarSystem(name="Solar System")
         self.assertEqual(solar_system.name, "Solar System")
         self.assertEqual(solar_system.planets, [])
-        self.assertEqual(solar_system.tst, {})
 
     def test_add_planet(self):
         solar_system = SolarSystem(name="Solar System")
@@ -33,6 +32,7 @@ class TestSolarSystem(unittest.TestCase):
         self.assertIn(SolarSystem, dataclasses)
 
     def test_get_type_description(self):
+        self.assertEqual(get_type_description(None), "None")
         self.assertEqual(get_type_description(str), "str")
         self.assertEqual(get_type_description(Planet), "Planet dataclass")
         self.assertEqual(get_type_description(List[Planet]), "List of Planet dataclass")
@@ -44,6 +44,8 @@ class TestSolarSystem(unittest.TestCase):
         self.assertEqual(get_field_default(planet_fields[1]), "Defaults to 0.0")  # mass
         self.assertEqual(get_field_default(planet_fields[2]), "Defaults to None")  # solar_system
         self.assertEqual(get_field_default(planet_fields[3]), "Defaults to False")  # is_dwarf_planet
+        solar_system_fields = fields(SolarSystem)
+        self.assertEqual(get_field_default(solar_system_fields[1]), "Defaults to empty list") # planets
 
 if __name__ == '__main__':
     unittest.main()

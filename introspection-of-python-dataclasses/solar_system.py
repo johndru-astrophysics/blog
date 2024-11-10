@@ -39,7 +39,6 @@ class SolarSystem:
     """
     name: str
     planets: List[Planet] = field(default_factory=list)
-    tst: Dict[str, Planet] = field(default_factory=dict)
     
     def add_planet(self, planet: Planet):
         """
@@ -64,30 +63,28 @@ def get_dataclasses(module: ModuleType) -> List[Type]:
     """
     return [cls for name, cls in inspect.getmembers(module) if is_dataclass(cls)]
 
-def get_type_description(type_: Type) -> str:
+def get_type_description(field_type: Type) -> str:
     """
     Retrieves the description of a type.
 
     Args:
-        type_ (Type): The type to retrieve the description of.
+        field_type (Type): The type to retrieve the description of.
 
     Returns:
         str: The name of the type.
     """
-    if type_ is None:
+    if field_type is None:
         return "None"
-    elif isinstance(type_, str):
-        return "str"
-    elif is_dataclass(type_):
-        return f"{type_.__name__} dataclass"
-    elif get_origin(type_) is list:
-        sub_type = get_args(type_)[0]
+    elif is_dataclass(field_type):
+        return f"{field_type.__name__} dataclass"
+    elif get_origin(field_type) is list:
+        sub_type = get_args(field_type)[0]
         return f"List of {get_type_description(sub_type)}"
-    elif get_origin(type_) is dict:
-        key_type, value_type = get_args(type_)
+    elif get_origin(field_type) is dict:
+        key_type, value_type = get_args(field_type)
         return f"Dict of {get_type_description(key_type)} -> {get_type_description(value_type)}"
     else:
-        return type_.__name__
+        return field_type.__name__
 
 def get_field_default(field: Field) -> str:
     """
@@ -101,10 +98,10 @@ def get_field_default(field: Field) -> str:
     """
     if field.default_factory != MISSING:
         return f"Defaults to empty {get_type_description(field.default_factory)}"
-    elif field.default == MISSING:
-        return "Required"
-    else:
+    elif field.default != MISSING:
         return f"Defaults to {field.default}"
+    else:
+        return "Required"
     
 if __name__ == "__main__":
 
