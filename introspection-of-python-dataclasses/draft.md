@@ -3,12 +3,12 @@ This article contains:
 
 * A brief introduction to Python dataclasses and introspection
 * An example of a dataclass model to store data
-* Details on how to programatically inspect our example model
+* Details on how to programmatically inspect our example model
 
-Prerequisists:
-* Basic python knowledge including defining classes
+Prerequisites:
+* Basic Python knowledge including defining classes
 
-You can find the source code used in this article on GutHub:
+You can find the source code used in this article on GitHub:
 
 https://github.com/johndru-astrophysics/blog/blob/main/introspection-of-python-dataclasses/solar_system.py
 
@@ -24,38 +24,38 @@ from dataclasses import dataclass
 @dataclass
 class Planet:
     name: str
-    mass_kg: int
+    mass: int
     is_dwarf_planet: bool = False
 ```
 
-Then, to create instances of the `Planet` class, you can provide keyword arguments as folows:
+Then, to create instances of the `Planet` class, you can provide keyword arguments as follows:
 
 ```python
-saturn = Planet(name='Saturn', mass_kg=568.34e24)
-pluto = Planet(name='Pluto', mass_kg=1.303e22, is_dwarf_planet=True)
+saturn = Planet(name='Saturn', mass=568.34e24)
+pluto = Planet(name='Pluto', mass=1.303e22, is_dwarf_planet=True)
 ```
 
 To access the instance field values, use dot notation, such as:
 
 ```python
-print(saturn.mass_kg)
+print(saturn.mass) # returns 568.34e24
 ```
 
 For more details see the dataclass package documentation: [https://docs.python.org/3/library/dataclasses.html](https://docs.python.org/3/library/dataclasses.html)
 
 ## What is introspection?
 
-Introspection, also called reflection or metaprograming, is a way to programatically inspect the structure of a class.
+Introspection, also called reflection or metaprogramming, is a way to programmatically inspect the structure of a class.
 
 ### Why is this useful?
 
 Applications of introspection include:
 
-* Converting to data structures in other programming languages, such as C/C++ for performance critical code and Dart for building GUIs with Flutter.
+* Converting to data structures in other programming languages, such as C/C++ for performance-critical code and Dart for building GUIs with Flutter.
 * Serialization and deserialization, for example when reading and writing JSON.
 * Automatic documentation generation, including class diagrams.
-* Form generation.    
-* Syntax checkers, highlights and linters.
+* Form generation.
+* Syntax checkers, highlights, and linters.
 * ORM (Object-Relational Mapping) when working with databases such as MySQL and PostGres.
 
 For more information see the following page: https://en.wikipedia.org/wiki/Reflective_programming
@@ -64,7 +64,7 @@ For more information see the following page: https://en.wikipedia.org/wiki/Refle
 
 We are going to create a model of a solar system containing planets.
 
-Let's start with the `Planet` class, with a some fields for storing data about the planets mass and orbit:
+Let's start with the `Planet` class, with some fields for storing data about the planet's mass and orbit:
 
 ```python
 from dataclasses import dataclass, field
@@ -98,9 +98,9 @@ class Planet:
 
 The `Planet` class contains:
 * A description of the class, including any units used. This is important to help developers using this model and for generating documentation.
-* A reference to a "SolarSystem" object. The class name is enclosed in double-quotes because we create this class later in the model.
+* A reference to a "SolarSystem" object. The class name is enclosed in double quotes because we create this class later in the model.
 
-Next we define the `SolarSystem` class:
+Next, we define the `SolarSystem` class:
 
 ```python
 @dataclass
@@ -130,9 +130,9 @@ A `SolarSystem` class contains:
 * The name of the solar system, which is a required field.
 * A list of planets.
 
-The `Planet` class name does not need double quotes because it is already define above this class in the model.
+The `Planet` class name does not need double quotes because it is already defined above this class in the model.
 
-The `planet` field is initalized with a `default_factory` of `list`. You must do this for all lists and dictonaries in a dataclass.
+The `planet` field is initialized with a `default_factory` of `list`. You must do this for all lists and dictionaries in a dataclass.
 
 The `add_planet` method is used to add a planet to this solar system, we will see later how this works.
 
@@ -143,9 +143,9 @@ Now we are going to write some Python code to inspect the dataclasses in our mod
 
 ## Step 1: Finding dataclasses in a module
 
-There are 2 functions we can use to find all members (classes, functions etc) of a module, then determine if the member is a dataclass:
+There are 2 functions we can use to find all members (classes, functions, etc.) of a module, then determine if the member is a dataclass:
 
-1. `inspect.getmembers` - returns all members if the specified module
+1. `inspect.getmembers` - returns all members of the specified module
 2. `is_dataclass` - returns True if the specified member is a dataclass
 
 We can write the following function to return all dataclasses in a specific module:
@@ -185,11 +185,11 @@ for dataclass in get_dataclasses(solar_system):
         print(f"  {field.name}: {field.type}")
 ```
 
-`field.name` returns the name of the field and `field.type` return an object representing the type of the field.
+`field.name` returns the name of the field and `field.type` returns an object representing the type of the field.
 
 The code above should output the following:
 
-```shell
+```plain
 Planet
   name: <class 'str'>
   mass: <class 'float'>
@@ -206,14 +206,14 @@ SolarSystem
 
 ## Step 3: Determining the properties of the field
 
-Each field type can included various properties such as:
+Each field type can include various properties such as:
 
 * Is the field a list or dict?
 * Does the field reference another dataclass?
 * Is the field optional?
 * Does the field have a default value?
 
-So, how to we post-process the fields type?
+So, how do we post-process the field's type?
 
 Each field has a type, accessed with `field.type`. We can inspect that type to determine what to do. We are going to create a function that given a type, returns a description of that type we can use later:
 
@@ -223,9 +223,10 @@ def get_type_description(field_type: Type) -> str:
 ```
 
 1. Is type None? Then return "None".
-1. Is type a reference to a dataclase? Return `"<dataclass-name> dataclass"`
+1. Is type an instance of a string? Then return "str".
+1. Is type a reference to a dataclass? Return `"<dataclass-name> dataclass"`
 1. Is type a list? Recursively call `get_type_description` to return the list types then return `"list of <sub-type-description>"`.
-1. Is type a dict? Recursively call `get_type_description` and the key type and the value type to return the dict types then return `"dict of <key-type-description> -> <value-type-decription>"`.
+1. Is type a dict? Recursively call `get_type_description` and the key type and the value type to return the dict types then return `"dict of <key-type-description> -> <value-type-description>"`.
 1. For everything else, just return `field_type.__name__`. For example, int would return "int" and float would return "float" etc.
 
 Here is the code to perform each of those checks:
@@ -245,6 +246,8 @@ def get_type_description(field_type: Type) -> str:
         return "None"
     elif is_dataclass(field_type):
         return f"{field_type.__name__} dataclass"
+    elif isinstance(field_type, str):
+        return "str"
     elif get_origin(field_type) is list:
         sub_type = get_args(field_type)[0]
         return f"List of {get_type_description(sub_type)}"
@@ -267,7 +270,7 @@ get_type_description(List[List[Planet]]) # returns "List of List of Planet datac
 
 ## Step 4: Determining the default value of a field, and if it is required
 
-Each field can have a default value, it is has no default value, then the field is required.
+Each field can have a default value, if it has no default value, then the field is required.
 
 We are going to create a function to return the default value, like this:
 
@@ -280,9 +283,9 @@ We can determine the default value of a field using the following steps:
 
 1. Does the field have `field.default_factory`? If so, the field will default to empty.
 2. Does the field have `field.default`? If so, the field default value is `field.default`
-3. Otherwise the field does not have a default value, so it is required.
+3. Otherwise, the field does not have a default value, so it is required.
 
-Here is to code to return a field's default value:
+Here is the code to return a field's default value:
 
 ```python
 def get_field_default(field: Field) -> str:
@@ -306,7 +309,7 @@ def get_field_default(field: Field) -> str:
 
 # Summary
 
-We created a simple model using Python dataclasses, to model a solar system and it's planets.
+We created a simple model using Python dataclasses, to model a solar system and its planets.
 
 Then we created 3 functions to:
 
@@ -316,7 +319,7 @@ Then we created 3 functions to:
 
 ## Putting it all together
 
-We can no use all the code we created to create print a summary of a modules dataclasses and their fields:
+We can now use all the code we created to print a summary of a module's dataclasses and their fields:
 
 ```python
 for dataclass in get_dataclasses(solar_system):
@@ -329,3 +332,21 @@ for dataclass in get_dataclasses(solar_system):
     print()
 ```
 
+You should see the following output:
+
+```plain
+Planet
+  name (str) : Required
+  mass (float) : Defaults to 0.0
+  solar_system (str) : Defaults to None
+  is_dwarf_planet (bool) : Defaults to False
+  semi_major_axis (float) : Defaults to 0.0
+  eccentricity (float) : Defaults to 0.0
+  inclination (float) : Defaults to 0.0
+  orbital_period (float) : Defaults to 0.0
+
+SolarSystem
+  name (str) : Required
+  planets (List of Planet dataclass) : Defaults to empty list
+
+```

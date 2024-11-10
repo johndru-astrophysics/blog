@@ -33,6 +33,7 @@ class TestSolarSystem(unittest.TestCase):
 
     def test_get_type_description(self):
         self.assertEqual(get_type_description(None), "None")
+        self.assertEqual(get_type_description("Something"), "str")
         self.assertEqual(get_type_description(str), "str")
         self.assertEqual(get_type_description(Planet), "Planet dataclass")
         self.assertEqual(get_type_description(List[Planet]), "List of Planet dataclass")

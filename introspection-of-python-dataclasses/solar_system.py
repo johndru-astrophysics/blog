@@ -77,6 +77,8 @@ def get_type_description(field_type: Type) -> str:
         return "None"
     elif is_dataclass(field_type):
         return f"{field_type.__name__} dataclass"
+    elif isinstance(field_type, str):
+        return "str"
     elif get_origin(field_type) is list:
         sub_type = get_args(field_type)[0]
         return f"List of {get_type_description(sub_type)}"
