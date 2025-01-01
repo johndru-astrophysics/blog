@@ -2,7 +2,7 @@
     "python.testing.unittestArgs": [
         "-v",
         "-s",
-        ".",
+        "./building-a-python-cli-to-check-directory-structures",
         "-p",
         "test_*.py"
     ],

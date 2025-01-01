@@ -9,191 +9,74 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
 @dataclass
-class FileStructure:
-    """Represents the structure of a file.
+class FilePattern:
+    """Represents the structure of a file or directory.
 
     Attributes:
-        pattern (str): The pattern of the file.
-        is_optional (bool): Indicates if the file is optional. Defaults to False.
+        pattern (str): The pattern of the file or directory.
+        is_optional (bool): Indicates if the item is optional. Defaults to False.
+        is_dir (bool): Indicates if the item is a directory. Defaults to False.
+        sub_items (List[FilePattern]): List of sub-items (for directories). Defaults to an empty list.
     """
 
-    pattern: str
+    expression: str
     is_optional: bool = False
-
-
-@dataclass
-class DirStructure:
-    """Represents the structure of a directory.
-
-    Attributes:
-        pattern (str): The pattern of the directory.
-        is_optional (bool): Indicates if the directory is optional. Defaults to False.
-        sub_dirs (List[DirStructure]): List of subdirectories. Defaults to an empty list.
-        files (List[FileStructure]): List of files in the directory. Defaults to an empty list.
-    """
-
-    pattern: str
-    is_optional: bool = False
-    sub_dirs: List["DirStructure"] = field(default_factory=list)
-    files: List[FileStructure] = field(default_factory=list)
+    is_dir: bool = False
+    sub_items: List["FilePattern"] = field(default_factory=list)
 
 
 def get_files_and_dirs(dir: str) -> Tuple[List[str], List[str]]:
-    """Get a list of files and directories from a directory.
-
-    Args:
-        dir (str): The directory to get the files and directories from.
-
-    Returns:
-        Tuple[List[str], List[str]]: A tuple containing the list of files and directories.
-    """
+    """Get a list of files and directories from a directory."""
     paths = os.listdir(dir)
-    files = [path for path in paths if Path(os.path.sep.join([dir, path])).is_file()]
-    dirs = [path for path in paths if Path(os.path.sep.join([dir, path])).is_dir()]
+    files = [path for path in paths if Path(os.path.join(dir, path)).is_file()]
+    dirs = [path for path in paths if Path(os.path.join(dir, path)).is_dir()]
     return files, dirs
 
 
-def validate_required_file_structures(
-    files: List[str], file_structures: List[FileStructure]
+def validate_patterns(
+    items: List[str], patterns: List[FilePattern], item_type: str
 ) -> bool:
-    """Validate the required file structures.
-
-    Args:
-        files (List[str]): The list of files in the directory.
-        file_structures (List[FileStructure]): The list of file structures to validate.
-    """
+    """Validate the required patterns and match existing items."""
     result = True
-    for file_structure in file_structures:
 
-        # Skip optional files
-        if file_structure.is_optional:
-            continue
+    # Check required patterns
+    for pattern in patterns:
+        if not pattern.is_optional and not any(
+            fnmatch(item, pattern.expression) for item in items
+        ):
+            logging.error(f"missing {item_type}: {pattern.expression}")
+            result = False
 
-        # Search for the file pattern
-        found = False
-        for file in files:
-            if fnmatch(file, file_structure.pattern):
-                found = True
-                break
-
-        # If not found, log an error
-        if not found:
-            logging.error(f"missing file: {file_structure.pattern}")
+    # Check for unexpected items
+    for item in items:
+        if not any(fnmatch(item, pattern.expression) for pattern in patterns):
+            logging.error(f"unexpected {item_type}: {item}")
             result = False
 
     return result
 
 
-def validate_files_match_file_structures(
-    files: List[str], file_structures: List[FileStructure]
-) -> bool:
-    """Validate the files match the file structures.
-
-    Args:
-        files (List[str]): The list of files in the directory.
-        file_structures (List[FileStructure]): The list of file structures to validate.
-    """
-    result = True
-    for file in files:
-
-        # Search for the file pattern
-        found = False
-        for file_structure in file_structures:
-            if fnmatch(file, file_structure.pattern):
-                found = True
-                break
-
-        # If not found, log an error
-        if not found:
-            logging.error(f"unexpected file: {file}")
-            result = False
-
-    return result
-
-
-def validate_required_dir_structures(
-    dirs: List[str], dir_structures: List[DirStructure]
-) -> bool:
-    """Validate the required directory structures.
-
-    Args:
-        dirs (List[str]): The list of directories in the directory.
-        dir_structures (List[DirStructure]): The list of directory structures to validate.
-    """
-    result = True
-    for dir_structure in dir_structures:
-
-        # Skip optional directories
-        if dir_structure.is_optional:
-            continue
-
-        # Search for the directory pattern
-        found = False
-        for dir in dirs:
-            if fnmatch(dir, dir_structure.pattern):
-                # Recursively validate the directory structure
-                validate_dir_structure(dir_structure, dir)
-                found = True
-                break
-
-        # If not found, log an error
-        if not found:
-            logging.error(f"missing directory: {dir_structure.pattern}")
-            result = False
-
-    return result
-
-
-def validate_dirs_match_dir_structures(
-    dirs: List[str], dir_structures: List[DirStructure]
-) -> bool:
-    """Validate the directories match the directory structures.
-
-    Args:
-        dirs (List[str]): The list of directories in the directory.
-        dir_structures (List[DirStructure]): The list of directory structures to validate.
-    """
-    result = True
-    for dir in dirs:
-
-        # Search for the directory pattern
-        found = False
-        for dir_structure in dir_structures:
-            if fnmatch(dir, dir_structure.pattern):
-                found = True
-                break
-
-        # If not found, log an error
-        if not found:
-            logging.error(f"unexpected directory: {dir}")
-            result = False
-    return result
-
-
-def validate_dir_structure(dir_structure: DirStructure, dir: str) -> bool:
-    """Validate the directory structure.
-
-    Args:
-        dir_structure (DirStructure): The directory structure to validate.
-        dir (str): The directory to validate.
-    """
+def validate_dir_structure(dir_pattern: FilePattern, dir: str) -> bool:
+    """Validate the directory structure."""
     logging.info(f"validating directory: {dir}")
 
-    # Get a list of files from the current directory
     files, dirs = get_files_and_dirs(dir)
 
     result = True
+    result &= validate_patterns(
+        files, [item for item in dir_pattern.sub_items if not item.is_dir], "file"
+    )
+    result &= validate_patterns(
+        dirs, [item for item in dir_pattern.sub_items if item.is_dir], "directory"
+    )
 
-    # Check all required files are present
-    result &= validate_required_file_structures(files, dir_structure.files)
-
-    # Check no unknown files exist
-    result &= validate_files_match_file_structures(files, dir_structure.files)
-
-    # Check all required directories are present
-    result &= validate_required_dir_structures(dirs, dir_structure.sub_dirs)
-
-    # Check no unknown directories exist
-    result &= validate_dirs_match_dir_structures(dirs, dir_structure.sub_dirs)
+    # Recursively validate subdirectories
+    for subdir in dirs:
+        for subdir_pattern in [item for item in dir_pattern.sub_items if item.is_dir]:
+            if fnmatch(subdir, subdir_pattern.expression):
+                result &= validate_dir_structure(
+                    subdir_pattern, os.path.join(dir, subdir)
+                )
+                break
 
     return result
